@@ -1,17 +1,37 @@
 # pylint: disable-all
 
+import ipdb
 import hashlib
 import argparse
 import timeit
 import random
 
+class FileUtils:
+    @staticmethod
+    def read(filename):
+        with open(filename, 'r') as f:
+            return f.readlines()
+
+    @staticmethod
+    def write(filename, data=[]):
+        with open(filename, 'w') as f:
+            return f.writelines(data)
+
+
 def hashing_md5(s):
     return hashlib.md5(s.encode()).hexdigest()
 
-def dict_attack(input, dict, output):
-    # input: <student_id>.txt, dict: words5.txt, output: output_dict.txt
-    #Code here
-    return 
+def dict_attack(source: str, dictfile: str, destination: str) -> None:
+    cracked = []
+    pwds = [w.strip('\n') for w in FileUtils.read(source)]
+    dictionary = [w.strip('\n') for w in FileUtils.read(dictfile)]
+
+    for word in dictionary:
+        h = hashing_md5(word)
+        if h in pwds:
+            cracked.append("%s: %s" % (word, h))
+
+    FileUtils.write(destination, [w + '\n' for w in cracked])
 
 def brute_force_alpha_numeric(input, output):
     #input: <student_id>.txt, output: output_brute.txt
