@@ -4,18 +4,27 @@ import ipdb
 import hashlib
 import argparse
 import timeit
+import itertools
 import random
+
+from pprint import pprint
 
 class FileUtils:
     @staticmethod
-    def read(filename):
+    def read(filename, strip=True):
         with open(filename, 'r') as f:
-            return f.readlines()
+            lines = f.readlines()
+            return lines if not strip else [l.strip('\n') for l in lines]
 
     @staticmethod
-    def write(filename, data=[]):
-        with open(filename, 'w') as f:
+    def write(filename, data=[], mode='w', newlines=True):
+        with open(filename, mode) as f:
+            if newlines:
+                for index, line in enumerate(data):
+                    if not line.endswith('\n'):
+                        data[index] = line + '\n'
             return f.writelines(data)
+
 
 
 def hashing_md5(s):
@@ -23,20 +32,34 @@ def hashing_md5(s):
 
 def dict_attack(source: str, dictfile: str, destination: str) -> None:
     cracked = []
-    pwds = [w.strip('\n') for w in FileUtils.read(source)]
-    dictionary = [w.strip('\n') for w in FileUtils.read(dictfile)]
+    pwds = FileUtils.read(source)
+    dictionary = FileUtils.read(dictfile)
 
     for word in dictionary:
         h = hashing_md5(word)
         if h in pwds:
-            cracked.append("%s: %s" % (word, h))
+            cracked.append("%s: %s\n" % (word, h))
 
-    FileUtils.write(destination, [w + '\n' for w in cracked])
+    FileUtils.write(destination, cracked)
 
-def brute_force_alpha_numeric(input, output):
-    #input: <student_id>.txt, output: output_brute.txt
-    #Code here
-    return
+def brute_force_alpha_numeric(source, destination):
+    pwds = FileUtils.read(source)
+    cracked = FileUtils.read('../output.txt')
+    hspace = [str(v) for v in range(10)] + [chr(v) for v in list(range(ord('a'), ord('z')))]
+    remainder = set(pwds).difference(set([pwd.split(': ')[-1] for pwd in cracked]))
+
+    combinations = itertools.product(hspace, repeat=5)
+    while True:
+        try:
+            word = "".join(next(combinations))
+            h = hashing_md5(word)
+            if h in remainder:
+                print("found a match: (%s, %s)" % (word, h))
+                cracked.append("%s: %s\n" % (word, h))
+        except StopIteration:
+            break
+
+    FileUtils.write(destination, cracked)
 
 def add_salt(input,output):
     #input: output_brute.txt, output: salted_hash.txt
